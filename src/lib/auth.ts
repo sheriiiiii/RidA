@@ -106,31 +106,31 @@
 //   }
 // }
 
-import { supabase } from "@/lib/supabase"
-import { PrismaClient } from "@prisma/client"
-import type { User } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase";
+import { PrismaClient } from "@prisma/client";
+import type { User } from "@supabase/supabase-js";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export interface AuthUser extends User {
-  email: string
+  email: string;
 }
 
 export const signIn = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
-  })
+  });
 
-  if (error) throw error
+  if (error) throw error;
 
   // Optionally sync with Prisma User model
   if (data.user) {
-    await syncUserWithPrisma(data.user)
+    await syncUserWithPrisma(data.user);
   }
 
-  return data
-}
+  return data;
+};
 
 export const signUp = async (email: string, password: string, name: string) => {
   const { data, error } = await supabase.auth.signUp({
@@ -141,36 +141,36 @@ export const signUp = async (email: string, password: string, name: string) => {
         name,
       },
     },
-  })
+  });
 
-  if (error) throw error
+  if (error) throw error;
 
   // Create corresponding record in Prisma User model
   if (data.user) {
-    await syncUserWithPrisma(data.user, name)
+    await syncUserWithPrisma(data.user, name);
   }
 
-  return data
-}
+  return data;
+};
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
-}
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
 
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  return user as AuthUser | null
-}
+  } = await supabase.auth.getUser();
+  return user as AuthUser | null;
+};
 
 export const getSession = async () => {
   const {
     data: { session },
-  } = await supabase.auth.getSession()
-  return session
-}
+  } = await supabase.auth.getSession();
+  return session;
+};
 
 // Sync Supabase Auth user with Prisma User model
 export const syncUserWithPrisma = async (supabaseUser: User, name?: string) => {
@@ -188,14 +188,14 @@ export const syncUserWithPrisma = async (supabaseUser: User, name?: string) => {
         email: supabaseUser.email!,
         // Remove password field - Supabase manages authentication
       },
-    })
+    });
 
-    console.log("✅ User synced with Prisma database")
+    console.log("✅ User synced with Prisma database");
   } catch (error) {
-    console.error("Error syncing user with Prisma:", error)
-    throw error // Re-throw to handle upstream
+    console.error("Error syncing user with Prisma:", error);
+    throw error; // Re-throw to handle upstream
   }
-}
+};
 
 // Get Prisma user data
 export const getPrismaUser = async (email: string) => {
@@ -209,10 +209,23 @@ export const getPrismaUser = async (email: string) => {
         createdAt: true,
         updatedAt: true,
       },
-    })
-    return user
+    });
+    return user;
   } catch (error) {
-    console.error("Error getting Prisma user:", error)
-    return null
+    console.error("Error getting Prisma user:", error);
+    return null;
   }
-}
+};
+
+export const getUser = async (): Promise<AuthUser | null> => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    return user as AuthUser | null;
+  } catch (error) {
+    console.error("Error getting user:", error);
+    return null;
+  }
+};

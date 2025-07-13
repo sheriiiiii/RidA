@@ -88,7 +88,7 @@ export default function AdminSidebar() {
       <SidebarHeader className="p-6 border-b bg-red border-gray-100 shadow-sm">
         <div className="flex items-center gap-1">
           <Image
-            src="/assets/RidA.png"
+            src="/assets/rida.png"
             alt="RidA Logo"
             width={65}
             height={65}

@@ -7,7 +7,7 @@ import { AuthProvider } from "@/components/auth/auth-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "VanTay 2.0",
+  title: "RidA PH",
   description: "Digital Ticketing and Access System",
 }
 
