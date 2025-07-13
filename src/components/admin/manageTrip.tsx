@@ -582,8 +582,8 @@ export default function ManageTrip() {
                                   trip.van.capacity
                                 )}`}
                               >
-                                {trip.availableSeats}/{trip.van.capacity}
-                              </span>
+                                {trip.van.capacity}
+                              </span> 
                             </div>
                           </td>
                           <td className="py-4 px-6">
