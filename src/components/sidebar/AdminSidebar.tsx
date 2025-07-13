@@ -87,13 +87,13 @@ export default function AdminSidebar() {
     <Sidebar className="border-r bg-white w-64 shadow-2xl z-50">
       <SidebarHeader className="p-6 border-b bg-red border-gray-100 shadow-sm">
         <div className="flex items-center gap-1">
-          <Image
-            src="/assets/rida.png"
-            alt="RidA Logo"
-            width={65}
-            height={65}
-            className="object-contain"
-          />
+            <Image
+              src="/assets/rida.png"
+              alt="RidA Logo"
+              width={65}
+              height={65}
+              className="object-contain"
+            />
           <span className="text-sm font-semibold text-[#0f172a]">
             Welcome Admin
           </span>
