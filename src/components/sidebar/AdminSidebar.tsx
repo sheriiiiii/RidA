@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Home,
   Bus,
@@ -36,14 +36,24 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/components/auth/auth-provider";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { RIDA_PROTOTYPE_MODE, signOutPrototypeAdmin } from "@/lib/prototype";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const currentView = searchParams.get("view") || "overview";
 
   const handleSignOut = async () => {
     try {
+      if (RIDA_PROTOTYPE_MODE) {
+        signOutPrototypeAdmin();
+        router.push("/admin/login");
+        router.refresh();
+        return;
+      }
+
       await supabase.auth.signOut();
       router.push("/admin/login");
       router.refresh();
@@ -52,26 +62,36 @@ export default function AdminSidebar() {
     }
   };
 
-  const navigationItems = [
-    { name: "Admin Panel", href: "/admin/dashboard", icon: Home },
-    { name: "Trip Routes", href: "/admin/dashboard/manage-route", icon: Route },
-    { name: "Van Fleet", href: "/admin/dashboard/manage-van", icon: Bus },
-    {
-      name: "Trip Planner",
-      href: "/admin/dashboard/manage-trip",
-      icon: MapPinned,
-    },
-    {
-      name: "Seat Selection",
-      href: "/admin/dashboard/manage-seat",
-      icon: Users,
-    },
-    {
-      name: "Ticket Logs",
-      href: "/admin/dashboard/manage-ticket",
-      icon: Ticket,
-    },
-  ];
+  const navigationItems = RIDA_PROTOTYPE_MODE
+    ? [
+        { name: "Home", href: "/admin/dashboard", view: "overview", icon: Home },
+        { name: "Manage Units", href: "/admin/dashboard?view=units", view: "units", icon: Bus },
+        { name: "Drivers", href: "/admin/dashboard?view=drivers", view: "drivers", icon: Users },
+        { name: "Routes", href: "/admin/dashboard?view=routes", view: "routes", icon: Route },
+        { name: "Trip Management", href: "/admin/dashboard?view=trips", view: "trips", icon: MapPinned },
+        { name: "Scan Ticket", href: "/admin/dashboard?view=scan", view: "scan", icon: Ticket },
+        { name: "Reports", href: "/admin/dashboard?view=reports", view: "reports", icon: Route },
+      ]
+    : [
+        { name: "Admin Panel", href: "/admin/dashboard", icon: Home },
+        { name: "Trip Routes", href: "/admin/dashboard/manage-route", icon: Route },
+        { name: "Van Fleet", href: "/admin/dashboard/manage-van", icon: Bus },
+        {
+          name: "Trip Planner",
+          href: "/admin/dashboard/manage-trip",
+          icon: MapPinned,
+        },
+        {
+          name: "Seat Selection",
+          href: "/admin/dashboard/manage-seat",
+          icon: Users,
+        },
+        {
+          name: "Ticket Logs",
+          href: "/admin/dashboard/manage-ticket",
+          icon: Ticket,
+        },
+      ];
 
   const displayName =
     user?.user_metadata?.name || user?.email?.split("@")[0] || "Admin";
@@ -85,17 +105,17 @@ export default function AdminSidebar() {
 
   return (
     <Sidebar className="border-r bg-white w-64 shadow-2xl z-50">
-      <SidebarHeader className="p-6 border-b bg-red border-gray-100 shadow-sm">
-        <div className="flex items-center gap-1">
+      <SidebarHeader className="border-b border-[#2580d9]/20 bg-[#0141c5] p-6 shadow-sm">
+        <div className="flex items-center gap-3">
           <Image
-            src="/assets/rida.png"
+            src="/assets/rida-dashboard-logo.png"
             alt="RidA Logo"
-            width={65}
-            height={65}
-            className="object-contain"
+            width={112}
+            height={48}
+            className="h-auto w-28 object-contain"
           />
-          <span className="text-sm font-semibold text-[#0f172a]">
-            Welcome Admin
+          <span className="text-xs font-semibold text-white/80">
+            Admin
           </span>
         </div>
       </SidebarHeader>
@@ -109,7 +129,9 @@ export default function AdminSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="px-3 space-y-1">
               {navigationItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = RIDA_PROTOTYPE_MODE
+                  ? pathname === "/admin/dashboard" && "view" in item && item.view === currentView
+                  : pathname === item.href;
                 const Icon = item.icon;
 
                 return (
@@ -168,7 +190,7 @@ export default function AdminSidebar() {
               >
                 <DropdownMenuItem asChild>
                   <Link
-                    href="/admin/profile"
+                    href={RIDA_PROTOTYPE_MODE ? "/admin/dashboard?view=account" : "/admin/profile"}
                     className="flex items-center gap-2 text-sm px-3 py-2"
                   >
                     <User className="h-4 w-4" />
@@ -177,7 +199,7 @@ export default function AdminSidebar() {
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link
-                    href="/admin/settings"
+                    href={RIDA_PROTOTYPE_MODE ? "/admin/dashboard?view=settings" : "/admin/settings"}
                     className="flex items-center gap-2 text-sm px-3 py-2"
                   >
                     <Settings className="h-4 w-4" />

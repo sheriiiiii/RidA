@@ -159,6 +159,14 @@ export const signOut = async () => {
 };
 
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
+  if (typeof window !== "undefined" && window.localStorage.getItem("rida-prototype-admin") === "true") {
+    return {
+      id: "prototype-admin",
+      email: "admin@rida.demo",
+      user_metadata: { name: "RidA Demo Admin" },
+    } as unknown as AuthUser;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -219,6 +227,14 @@ export const getPrismaUser = async (email: string) => {
 
 export const getUser = async (): Promise<AuthUser | null> => {
   try {
+    if (typeof window !== "undefined" && window.localStorage.getItem("rida-prototype-admin") === "true") {
+      return {
+        id: "prototype-admin",
+        email: "admin@rida.demo",
+        user_metadata: { name: "RidA Demo Admin" },
+      } as unknown as AuthUser;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();

@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import { RIDA_PROTOTYPE_MODE, signInPrototypeAdmin } from "@/lib/prototype";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -25,6 +26,12 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
+      if (RIDA_PROTOTYPE_MODE) {
+        signInPrototypeAdmin();
+        window.location.href = "/admin/dashboard";
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -50,32 +57,28 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex">
-        {/* Left Panel */}
-        <div className="w-2/5 relative flex items-center justify-center">
-          {/* Background Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-blue-300 z-0" />
+    <div className="rida-map-soft flex min-h-screen items-center justify-center p-4">
+      <div className="rida-card flex w-full max-w-4xl overflow-hidden rounded-[2rem]">
+        <div className="rida-map-panel relative hidden w-2/5 items-center justify-center md:flex">
 
           <Image
-            src="/assets/rida.png"
+            src="/assets/rida-dashboard-logo.png"
             alt="Logo"
             width={352} // 88 * 4 (tailwind unit)
             height={176} // match aspect ratio
-            className="z-10 w-88 h-auto object-contain"
+            className="z-10 h-auto w-72 object-contain mix-blend-screen"
             priority
           />
         </div>
 
-        {/* Right Panel - Form */}
-        <div className="w-3/5 p-12 flex flex-col justify-center">
+        <div className="flex w-full flex-col justify-center p-8 md:w-3/5 md:p-12">
           <form
             onSubmit={handleSubmit}
             className="max-w-sm mx-auto w-full space-y-8"
           >
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-gray-900">
-                Welcome Back, Admin!
+                Welcome Back, Cashier/Admin
               </h1>
               <p className="text-gray-500 text-sm">
                 <strong>RidA. Smarter rides, fewer hassles.</strong>
@@ -175,7 +178,7 @@ export default function LoginForm() {
             <div className="flex justify-center mt-6">
               <Button
                 type="submit"
-                className="w-[200px] h-12 bg-sky-400 hover:bg-cyan-600 text-white font-medium rounded-full text-base"
+                className="rida-button h-12 w-[220px] rounded-full text-base font-bold"
                 disabled={loading}
               >
                 {loading ? (
@@ -191,7 +194,7 @@ export default function LoginForm() {
 
             <div className="text-center pt-6">
               <p className="text-xs text-gray-500">
-                All rights reserved © 2025
+                All rights reserved 2026
               </p>
             </div>
           </form>

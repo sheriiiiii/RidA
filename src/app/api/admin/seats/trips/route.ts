@@ -2,6 +2,36 @@ import { type NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
+type TripWhereClause = {
+  status: "SCHEDULED"
+  tripDate?: {
+    gte: Date
+    lte: Date
+  }
+}
+type AdminSeatTrip = {
+  id: number
+  tripDate: Date
+  arrivalTime: string | null
+  driverName: string | null
+  route: {
+    origin: string
+    destination: string
+  }
+  van: {
+    plateNumber: string
+    capacity: number
+  }
+  tickets: {
+    id: number
+    passengerName: string
+    paymentStatus: string
+    ticketStatus: string
+    seat: {
+      seatNumber: string
+    }
+  }[]
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +43,7 @@ export async function GET(request: NextRequest) {
     console.log("Date filter:", dateParam)
 
     // Build where clause - start with existing status filter
-    const whereClause: import("@prisma/client").Prisma.TripWhereInput = {
+    const whereClause: TripWhereClause = {
       status: "SCHEDULED",
     }
 
@@ -61,7 +91,7 @@ export async function GET(request: NextRequest) {
 
     console.log("Found trips:", trips.length)
 
-    const formattedTrips = trips.map((trip) => ({
+    const formattedTrips = (trips as AdminSeatTrip[]).map((trip) => ({
       id: trip.id,
       route: `${trip.route.origin} to ${trip.route.destination}`,
       tripDate: trip.tripDate,

@@ -1,14 +1,15 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, IdCard, Loader2, ShieldCheck, UserRound } from "lucide-react"
+import { createPrototypeTicket, RIDA_PROTOTYPE_MODE } from "@/lib/prototype"
 
 interface PassengerData {
   name: string
@@ -19,58 +20,35 @@ interface PassengerData {
   classification: string
 }
 
-// Skeleton component for the passenger info form
+const baseInputClass =
+  "h-12 rounded-2xl border-[#b2dfff] bg-white px-4 text-[#0e2865] shadow-sm focus:border-[#2580d9] focus:ring-[#2580d9]"
+
 function PassengerInfoSkeleton() {
   const router = useRouter()
 
-  const handleBack = () => {
-    router.back()
-  }
-
   return (
-    <div className="min-h-screen bg-blue-100 px-4 py-6">
-      {/* Header with real title */}
-      <div className="flex items-center mb-8">
-        <button onClick={handleBack} className="mr-4" title="Go back" aria-label="Go back">
-          <ArrowLeft className="h-6 w-6 text-gray-900" />
+    <div className="rida-mobile-shell rida-page px-5 py-6">
+      <div className="mb-8 flex items-center gap-3">
+        <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm" aria-label="Go back">
+          <ArrowLeft className="h-5 w-5 text-[#0e2865]" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-700">Passenger Information</h1>
-          <div className="w-16 h-4 bg-gray-300 rounded animate-pulse mt-1"></div>
+          <h1 className="text-2xl font-black text-[#0e2865]">Passenger Details</h1>
+          <div className="mt-1 h-4 w-20 animate-pulse rounded bg-gray-300" />
         </div>
       </div>
 
-      {/* Form Container Skeleton */}
-      <div className="max-w-md mx-auto">
-        <Card className="shadow-lg border-0 bg-blue-50">
-          <CardContent className="p-6">
-            <div className="space-y-6">
-              {/* Form fields skeleton */}
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="space-y-2">
-                  <div className="w-24 h-4 bg-gray-300 rounded animate-pulse"></div>
-                  <div className="w-full h-10 bg-gray-300 rounded animate-pulse"></div>
-                </div>
-              ))}
-
-              {/* Submit Button Skeleton */}
-              <div className="pt-4">
-                <div className="w-full h-12 bg-gray-300 rounded-lg animate-pulse"></div>
-              </div>
+      <Card className="rida-card rounded-[2rem] border-0 p-0">
+        <CardContent className="space-y-5 p-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 w-24 animate-pulse rounded bg-gray-300" />
+              <div className="h-12 w-full animate-pulse rounded-2xl bg-gray-200" />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Debug Info Skeleton */}
-      <div className="max-w-md mx-auto mt-8 p-3 bg-gray-100 rounded">
-        <div className="w-16 h-3 bg-gray-300 rounded animate-pulse mb-2"></div>
-        <div className="space-y-1">
-          <div className="w-20 h-3 bg-gray-300 rounded animate-pulse"></div>
-          <div className="w-20 h-3 bg-gray-300 rounded animate-pulse"></div>
-          <div className="w-24 h-3 bg-gray-300 rounded animate-pulse"></div>
-        </div>
-      </div>
+          ))}
+          <div className="h-12 w-full animate-pulse rounded-full bg-gray-300" />
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -94,20 +72,13 @@ export default function PassengerInfo() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Simulate loading for form initialization
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 800) // Simulate loading time
-
+    const timer = setTimeout(() => setLoading(false), 450)
     return () => clearTimeout(timer)
   }, [])
 
   const handleInputChange = (field: keyof PassengerData, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,11 +92,26 @@ export default function PassengerInfo() {
     setError(null)
 
     try {
+      if (RIDA_PROTOTYPE_MODE) {
+        const ticket = createPrototypeTicket({
+          tripId: Number(tripId),
+          seatNumber: seatNumber || "01",
+          passengerName: formData.name,
+          passengerAddress: formData.address,
+          passengerAge: Number(formData.age),
+          passengerPhone: formData.contactNumber,
+          passengerEmergencyContact: formData.emergencyContact || formData.contactNumber,
+          passengerType: formData.classification.toUpperCase().replace(" ", "_"),
+        })
+
+        sessionStorage.setItem("ticketData", JSON.stringify(ticket))
+        router.push(`/passenger/payment?ticketId=${ticket.id}`)
+        return
+      }
+
       const response = await fetch("/api/passenger/tickets", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           tripId: Number(tripId),
           seatId: Number(seatId),
@@ -144,9 +130,7 @@ export default function PassengerInfo() {
       }
 
       const data = await response.json()
-      if (!data.success) {
-        throw new Error(data.error || "Failed to create ticket")
-      }
+      if (!data.success) throw new Error(data.error || "Failed to create ticket")
 
       sessionStorage.setItem("ticketData", JSON.stringify(data.ticket))
       router.push(`/passenger/payment?ticketId=${data.ticket.id}`)
@@ -155,10 +139,6 @@ export default function PassengerInfo() {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const handleBack = () => {
-    router.back()
   }
 
   const isFormValid = () => {
@@ -170,181 +150,119 @@ export default function PassengerInfo() {
 
   if (!tripId || !seatId) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Missing trip or seat information</p>
-          <p className="text-sm text-gray-600 mb-4">
+      <div className="rida-mobile-shell rida-page flex items-center justify-center px-6">
+        <div className="rida-card rounded-3xl p-6 text-center">
+          <p className="mb-2 font-bold text-red-600">Missing trip or seat information</p>
+          <p className="mb-4 text-sm text-slate-500">
             Trip ID: {tripId || "Missing"} | Seat ID: {seatId || "Missing"}
           </p>
-          <Button onClick={() => router.push("/passenger/trips")}>Back to Trips</Button>
+          <Button onClick={() => router.push("/passenger/trip-lists")} className="rida-button rounded-full">Back to Trips</Button>
         </div>
       </div>
     )
   }
 
-  if (loading) {
-    return <PassengerInfoSkeleton />
-  }
+  if (loading) return <PassengerInfoSkeleton />
 
   return (
-    <div className="min-h-screen bg-blue-100 px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center mb-8">
-        <button onClick={handleBack} className="mr-4" title="Go back" aria-label="Go back">
-          <ArrowLeft className="h-6 w-6 text-gray-900" />
+    <main className="rida-mobile-shell rida-page rida-safe-bottom px-5 py-6">
+      <div className="mb-6 flex items-center gap-3">
+        <button onClick={() => router.back()} className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-sm" aria-label="Go back">
+          <ArrowLeft className="h-5 w-5 text-[#0e2865]" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-700">Passenger Information</h1>
-          <p className="text-sm text-gray-600">Seat {seatNumber}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2580d9]">Step 3 of 5</p>
+          <h1 className="text-2xl font-black text-[#0e2865]">Passenger Details</h1>
         </div>
       </div>
 
-      {/* Error Message */}
+      <section className="rida-card mb-5 rounded-3xl p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#2580d9]">Reserved seat</p>
+            <p className="text-3xl font-black text-[#0e2865]">{seatNumber}</p>
+          </div>
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#0141c5] text-white">
+            <UserRound className="h-7 w-7" />
+          </div>
+        </div>
+      </section>
+
       {error && (
-        <div className="max-w-md mx-auto mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
+        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-3">
+          <p className="text-sm font-medium text-red-600">{error}</p>
         </div>
       )}
 
-      {/* Form Container */}
-      <div className="max-w-md mx-auto ">
-        <Card className=" shadow-lg border-0 bg-blue-50">
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-700 font-bold">
-                  Name *
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  className="bg-white border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Enter your full name"
-                  disabled={isSubmitting}
-                />
-              </div>
+      <Card className="rida-card rounded-[2rem] border-0 p-0">
+        <CardContent className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="font-bold text-[#0e2865]">Full Name *</Label>
+              <Input id="name" value={formData.name} onChange={(e) => handleInputChange("name", e.target.value)} className={baseInputClass} placeholder="Juan Dela Cruz" disabled={isSubmitting} />
+            </div>
 
-              {/* Address */}
-              <div className="space-y-2">
-                <Label htmlFor="address" className="text-gray-700 font-bold">
-                  Address *
-                </Label>
-                <Input
-                  id="address"
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  className="bg-white border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Enter your address"
-                  disabled={isSubmitting}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="address" className="font-bold text-[#0e2865]">Address *</Label>
+              <Input id="address" value={formData.address} onChange={(e) => handleInputChange("address", e.target.value)} className={baseInputClass} placeholder="Street, barangay, city" disabled={isSubmitting} />
+            </div>
 
-              {/* Age */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="age" className="text-gray-700 font-bold">
-                  Age *
-                </Label>
-                <Input
-                  id="age"
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => handleInputChange("age", e.target.value)}
-                  className="bg-white border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Enter your age"
-                  min="1"
-                  max="120"
-                  disabled={isSubmitting}
-                />
+                <Label htmlFor="age" className="font-bold text-[#0e2865]">Age *</Label>
+                <Input id="age" type="number" value={formData.age} onChange={(e) => handleInputChange("age", e.target.value)} className={baseInputClass} placeholder="25" min="1" max="120" disabled={isSubmitting} />
               </div>
-
-              {/* Contact Number */}
               <div className="space-y-2">
-                <Label htmlFor="contactNumber" className="text-gray-700 font-bold">
-                  Contact Number *
-                </Label>
-                <Input
-                  id="contactNumber"
-                  type="tel"
-                  value={formData.contactNumber}
-                  onChange={(e) => handleInputChange("contactNumber", e.target.value)}
-                  className="bg-white border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Enter your contact number"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Emergency Contact */}
-              <div className="space-y-2">
-                <Label htmlFor="emergencyContact" className="text-gray-700 font-bold">
-                  Emergency Contact
-                </Label>
-                <Input
-                  id="emergencyContact"
-                  type="tel"
-                  value={formData.emergencyContact}
-                  onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
-                  className="bg-white border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                  placeholder="Emergency contact (optional)"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Classification */}
-              <div className="space-y-2">
-                <Label htmlFor="classification" className="text-gray-700 font-bold">
-                  Classification *
-                </Label>
-                <Select
-                  value={formData.classification}
-                  onValueChange={(value) => handleInputChange("classification", value)}
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger className="border-1 border-gray-400 shadow-sm h-10 text-gray-900 focus:border-gray-500 focus:ring-1 focus:ring-gray-500">
-                    <SelectValue placeholder="Select classification" />
+                <Label htmlFor="classification" className="font-bold text-[#0e2865]">Type *</Label>
+                <Select value={formData.classification} onValueChange={(value) => handleInputChange("classification", value)} disabled={isSubmitting}>
+                  <SelectTrigger className={`${baseInputClass} w-full`}>
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Regular">Regular (₱210)</SelectItem>
-                    <SelectItem value="Student">Student (₱170)</SelectItem>
-                    <SelectItem value="PWD">PWD (₱170)</SelectItem>
-                    <SelectItem value="Senior Citizen">Senior Citizen (₱170)</SelectItem>
+                    <SelectItem value="Regular">Regular</SelectItem>
+                    <SelectItem value="Student">Student</SelectItem>
+                    <SelectItem value="PWD">PWD</SelectItem>
+                    <SelectItem value="Senior Citizen">Senior Citizen</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              {/* ID Verification */}
-              {requiresIdVerification && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-red-600 text-sm">
-                    **If Student, PWDs, or Senior Citizen, please present your ID at the counter.
-                  </p>
-                </div>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="contactNumber" className="font-bold text-[#0e2865]">Contact Number *</Label>
+              <Input id="contactNumber" type="tel" value={formData.contactNumber} onChange={(e) => handleInputChange("contactNumber", e.target.value)} className={baseInputClass} placeholder="09XX XXX XXXX" disabled={isSubmitting} />
+            </div>
 
-              {/* Submit Button */}
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  disabled={!isFormValid() || isSubmitting}
-                  className="w-full bg-cyan-800 hover:bg-cyan-900 text-white rounded-lg h-12 font-medium disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Ticket...
-                    </>
-                  ) : (
-                    "Save and Continue"
-                  )}
-                </Button>
+            <div className="space-y-2">
+              <Label htmlFor="emergencyContact" className="font-bold text-[#0e2865]">Emergency Contact</Label>
+              <Input id="emergencyContact" type="tel" value={formData.emergencyContact} onChange={(e) => handleInputChange("emergencyContact", e.target.value)} className={baseInputClass} placeholder="Optional" disabled={isSubmitting} />
+            </div>
+
+            {requiresIdVerification && (
+              <div className="flex gap-3 rounded-2xl border border-[#b2dfff] bg-[#eef8ff] p-3">
+                <IdCard className="mt-0.5 h-5 w-5 shrink-0 text-[#2580d9]" />
+                <p className="text-sm font-medium text-[#0e2865]">Please bring your ID upon checking or at the terminal.</p>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            )}
+
+            <div className="flex gap-3 rounded-2xl bg-slate-50 p-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#2580d9]" />
+              <p className="text-sm text-slate-600">Your details are used only for ticket validation and trip manifests.</p>
+            </div>
+
+            <Button type="submit" disabled={!isFormValid() || isSubmitting} className="rida-button h-12 w-full rounded-full font-bold disabled:shadow-none">
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating Ticket...
+                </>
+              ) : (
+                "Save and Continue"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </main>
   )
 }

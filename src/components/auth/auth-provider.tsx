@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
+import { getPrototypeAdminUser, RIDA_PROTOTYPE_MODE } from "@/lib/prototype"
 
 interface AuthContextType {
   user: User | null
@@ -29,6 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (RIDA_PROTOTYPE_MODE) {
+      setUser(getPrototypeAdminUser() as User | null)
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     const getInitialSession = async () => {
       try {
