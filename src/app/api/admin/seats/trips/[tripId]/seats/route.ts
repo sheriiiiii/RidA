@@ -2,6 +2,20 @@ import { type NextRequest, NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
+type SeatWithTickets = {
+  id: number
+  seatNumber: string
+  tickets: {
+    paymentStatus: "PENDING" | "PAID" | "REFUNDED" | "CANCELLED"
+    ticketStatus: "ACTIVE" | "USED" | "CANCELLED" | "EXPIRED"
+  }[]
+}
+type SeatStatusRecord = {
+  id: number
+  seatNumber: string
+  status: "available" | "occupied" | "pending"
+  ticket: SeatWithTickets["tickets"][number] | null
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ tripId: string }> }) {
   try {
@@ -46,7 +60,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Map seats with their status
-    const seatsWithStatus = trip.van.seats.map((seat) => {
+    const seatsWithStatus: SeatStatusRecord[] = trip.van.seats.map((seat: SeatWithTickets) => {
       let status: "available" | "occupied" | "pending" = "available"
 
       if (seat.tickets.length > 0) {
